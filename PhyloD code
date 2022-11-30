@@ -1,0 +1,195 @@
+## load phytools
+library(phytools)
+library(PhyloMeasures)
+
+setwd("C:/Users/u21844012/Desktop/Poaceae Trait Evolution/Bioregion")
+
+#load data
+Phylopoas<-read.tree("phylo_poaceae.txt")
+plot(Phylopoas)
+arbol<-makeNodeLabel(Phylopoas)
+
+Poasps<-read.csv("Invasive Species.csv", header=TRUE, sep=",")
+Poasps<-read.csv("Invasive Pooideas.csv", header=TRUE, sep=",")
+Poasps<-read.csv("Invasive Bambusin.csv", header=TRUE, sep=",")
+Poasps<-read.csv("Invasive Oryza.csv", header=TRUE, sep=",")
+Poasps<-read.csv("Invasive Paniceae.csv", header=TRUE, sep=",")
+Poasps<-read.csv("Invasive Polar.csv", header=TRUE, sep=",")
+
+Poasps<- read.csv("spfactoryinvnat.csv", header=T, sep=",")
+oryza <- read.csv("invasive oryza.csv", header=T, sep=",")
+paniceae <- read.csv("invasive paniceae.csv", header=T, sep=",")
+poidea <- read.csv("invasive Pooideas.csv", header=T, sep=",")
+bambusin <- read.csv("invasive Bambusin.csv", header=T, sep=",")
+
+Poasps<-read.csv("spfactorylist.csv", header=TRUE, sep=",")
+
+status<-Poasps[,2]
+names(status)<-Poasps[,1]
+
+#fit model
+fitER <- rerootingMethod(arbol, status, model = "ER")
+print(fitER)
+
+plot(fitER)
+plot(fitER, type="fan")
+
+
+#plot results
+?nodelabels
+plotTree(arbol, setEnv = TRUE, offset = 0.5, fsize=0.05, lwd=0.2)
+nodelabels(status, adj = -0.2, frame = "n", cex = 0.8, font = 2)
+
+plotTree(arbol, setEnv = TRUE, offset = 0.5, fsize=0.05, lwd=0.2)
+nodelabels(node = as.numeric(rownames(fitER$marginal.anc)), pie = fitER$marginal.anc, 
+           piecol = c("blue", "red"), cex = 0.05, lwd=0.01, fg = NA)
+tiplabels(pie = to.matrix(status, sort(unique(status))), piecol = c("blue", "red"), 
+          cex = 0.1, fg = NA)
+
+plotTree(Phylopoas, setEnv = TRUE, offset = 0.5, fsize=0.05, lwd=0.2)
+nodelabels(thermo = runif(22), cex = .8)
+
+plot(Phylopoas, main = "Showing Edge Lengths")
+edgelabels(round(tr$edge.length, 3), srt = 90)
+
+#fan map
+plotTree(arbol, type="fan", offset = 0.5, fsize=0.05, lwd=0.2)
+nodelabels(node = as.numeric(rownames(fitER$marginal.anc)), pie = fitER$marginal.anc, 
+           piecol = c("green", "red"), cex = 0.1, pch = 1, lty="blank")
+tiplabels(pie = to.matrix(status, sort(unique(status))), piecol = c("green", "red"), 
+          cex = 0.05)
+
+
+?plotTree
+
+#calculate density maps
+poatree<-make.simmap(arbol,status,nsim=100, legend=NULL, colors=setNames(c("black","white"),c("a","b")))
+obj<-densityMap(poatree,states=c("a","b"), plot=TRUE, type="fan", lwd=0.6,outline=F,fsize=c(0.07,0.09)) #calcular el mapa de densidad parte 3
+
+n<-length(obj$cols)
+obj$cols[1:n]<-colorRampPalette(c("red","orange","gold","lightblue", "blue", "darkblue"), space="Lab")(n)
+obj$edge<-length(obj$edge)/2
+
+plot(obj, type="fan", edge.length=(obj$edge)/2, use.edge.length = FALSE, length(obj$edge)/2, replace=TRUE, lwd=1,outline=F,fsize=c(0.1,0.1))
+
+objplot(Phylopoas, type="fan", length(Phylopoas$edge)/2)
+
+status<- read.csv("status.csv", header=T, sep=",")
+x <- status$Invasora
+names(x) <- rownames(status)
+tiplabels(pie = x, piecol = c("red", "darkgreen"), cex=0.3)
+
+
+#Re-escaled visualization
+Phylopoas<-read.tree("phylotreeplants.txt")
+phylo2<-rescale(Phylopoas, 'lambda',0.95)
+plot(phylo2, type="fan")
+arbol<-makeNodeLabel(phylo2)
+Poasps<-read.csv("Invasive Polar.csv", header=TRUE, sep=",")
+status<-Poasps[,2]
+names(status)<-Poasps[,1]
+fitER <- rerootingMethod(arbol, status, model = "ER")
+print(fitER)
+
+
+#visual edits
+save(obj, file="Glonaf.Rdata") 
+colors<-setNames(palette()[1:2],sort(unique(x))) > add.simmap.legend(colors=colors,vertical=FALSE) 
+
+plot(obj,lwd=0.6,outline=F,fsize=c(0.07,0.09), legend=NULL, colors=setNames(c("green","red"),c("a","b")),legend=30, type="fan")
+
+plot(obj,lwd=0.6,outline=F,fsize=c(0.07,0.09), colors=("green", "red"),c("a","b")),legend=30, type="fan")
+
+plotSimmap(poatree[[1]], colors=setNames(c("grey","red"),c("a","b")), type="fan",lwd=0.3)
+
+ladderize.simmap(obj, right=TRUE)
+
+#tree plotting
+my_colours <- c("blue", "red")
+plot(arbol, lwd=c(1,3),type="fan", cex = 0.05, tip.color = my_colours[(Poasps$Status == "a")+1])
+
+poatree<-make.simmap(arbol,status,nsim=100, legend=NULL, colors=setNames(c("black","white"),c("a","b"))) #calcular el mapa de densidad parte 
+obj<-densityMap(poatree,states=c("a","b"), plot=TRUE, type="fan", lwd=0.6,outline=F,fsize=c(0.07,0.09))
+object<-setMap(obj,c("red", "light blue", "green"))
+plot(object,lwd=c(1,3),type="fan",fsize=0.05)
+
+#Phylo D calculations
+install.packages("caper")
+library(caper)
+arbol<-read.tree("phylo_poaceae.txt")
+arbol2<-makeNodeLabel(arbol)
+combinado <- read.csv("spfactoryinvnat.csv", header=T, sep=",")
+combinado2<-(combinado[,c(1,3)])
+Invasora<-combinado2[  which(combinado2$Invasora == "a" ), ]
+com.data<-comparative.data(arbol2,combinado2, Species, vcv = T)
+PhyloD <- phylo.d(com.data, binvar=Invasora, permut=100, rnd.bias=)
+plot(PhyloD)
+
+combinado3<-(combinado[,c(1,2)])
+Naturalizada<-combinado3[  which(combinado3$Naturalizada == "a" ), ]
+com.data<-comparative.data(arbol2,combinado3, Species, vcv = T)
+PhyloD <- phylo.d(com.data, binvar=Naturalizada, permut=100, rnd.bias=)
+plot(PhyloD)
+
+redPhyloD <- PhyloD
+
+brown <- (redPhyloD$Permutations$brownian - mean(redPhyloD$Permutations$brownian))/(mean(redPhyloD$Permutations$random)-mean(redPhyloD$Permutations$brownian))
+rand <- (redPhyloD$Permutations$random - mean(redPhyloD$Permutations$brownian))/(mean(redPhyloD$Permutations$random)-mean(redPhyloD$Permutations$brownian))
+
+hist(brown, freq=F, xlim=c(-0.5,1.5), ylim = c(0,20), add=F, breaks = 7,
+     main="", xlab = "D value", ylab = "Density", col = "light blue")
+hist(rand, add=T, freq=F, col = "pink", breaks = 7)
+
+D <- ((redPhyloD$Parameters$Observed) - (redPhyloD$Parameters$MeanBrownian))/((redPhyloD$Parameters$MeanRandom)-(redPhyloD$Parameters$MeanBrownian))
+arrows(D, 15.5, D, 0, angle=45,length = 0.1, lwd=2, col = "red")
+
+
+complete<- read.csv("spfactoryinvnat.csv", header=T, sep=",")
+oryza <- read.csv("invasive oryza.csv", header=T, sep=",")
+paniceae <- read.csv("invasive paniceae.csv", header=T, sep=",")
+poidea <- read.csv("invasive Pooideas.csv", header=T, sep=",")
+bambusin <- read.csv("invasive Bambusin.csv", header=T, sep=",")
+
+library(dplyr)
+library(tidyr)
+
+#Oryza
+oryzalist <- left_join(complete, oryza, by=c("Species"="Species"))
+oryzacases <- oryzalist[complete.cases(oryzalist$Invasora.y), ]
+combinado <- oryzacases[c("Species", "Naturalizada", "Invasora.y")]
+nrow(combinado)
+
+#Paniceae
+list <- left_join(complete, paniceae, by=c("Species"="Species"))
+cases <- list[complete.cases(list$Invasora.y), ]
+combinado <- cases[c("Species", "Naturalizada", "Invasora.y")]
+nrow(combinado)
+
+#Poidea
+list <- left_join(complete, poidea, by=c("Species"="Species"))
+cases <- list[complete.cases(list$Invasora.y), ]
+combinado <- cases[c("Species", "Naturalizada", "Invasora.y")]
+nrow(combinado)
+
+#Bambusinoidea
+list <- left_join(complete, bambusin, by=c("Species"="Species"))
+cases <- list[complete.cases(list$Invasora.y), ]
+combinado <- cases[c("Species", "Naturalizada", "Invasora.y")]
+nrow(combinado)
+
+#PhyloD
+combinadoInv<-(combinado[,c(1,3)])
+Invasora<-combinado2[  which(combinadoInv$Invasora.y == "a" ), ]
+com.data<-comparative.data(arbol2,combinadoInv, Species, vcv = T)
+PhyloD <- phylo.d(com.data, binvar=Invasora.y, permut=100, rnd.bias=)
+plot(PhyloD)
+PhyloD
+
+combinadoNat<-(combinado[,c(1,2)])
+Naturalizada<-combinadoNat[  which(combinadoNat$Naturalizada == "a" ), ]
+com.data<-comparative.data(arbol2,combinadoNat, Species, vcv = T)
+PhyloD <- phylo.d(com.data, binvar=Naturalizada, permut=100, rnd.bias=)
+plot(PhyloD)
+PhyloD
+
+  
