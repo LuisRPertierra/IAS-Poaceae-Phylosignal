@@ -1,0 +1,90 @@
+library("ape")
+
+setwd("C:/Users/Usuario/Desktop/Research Secondment Univ.Fed.Sergipe/Poaceae PAPER")
+
+##SUBFAMILY GROUPINGS
+
+Phyloplants<-read.tree("Qian_Jin_2016.txt")
+Listplants<-read.table("list_pooideas.txt", header=TRUE)
+Listplants<-read.table("list_bambusin.txt", header=TRUE)
+Listplants<-read.table("list_oryza.txt", header=TRUE)
+Listplants<-read.table("list_paniceae.txt", header=TRUE)
+head(Listplants)
+class(Listplants)
+
+list1 <- as.character(Listplants$Species)  #Extracts a vector of species names from the data
+class(list1)
+
+list2 <- Phyloplants$tip.label  #Extracts a vector of species names from the tree
+
+dif<-setdiff(list1,list2)
+
+list1[which((list1 %in% list2) == FALSE)]  #Species in list1 missing in list2
+list2[which((list2 %in% list1) == FALSE)]  #Species in list2 missing in list1
+
+no_quiero<-drop.tip(Phyloplants, list1)
+
+Tree_tip_keep<-drop.tip(Phyloplants, no_quiero$tip.label)
+
+
+write.tree(Tree_tip_keep, "phylo_pooideas.txt")
+write.tree(Tree_tip_keep, "phylo_bambusin.txt")
+write.tree(Tree_tip_keep, "phylo_oryza.txt")
+write.tree(Tree_tip_keep, "phylo_paniceae.txt")
+
+Phyloinvas<-read.tree("phylo_invpooideas.txt")
+
+a<-cophenetic(Phyloinvas)
+str(a)
+
+
+write.csv(a, "C:/Users/Usuario/Desktop/Research Secondment Univ.Fed.Sergipe/Poaceae PAPER/distinvpooideas.csv")
+
+?cophenetic
+
+
+
+################GLONAF####################################
+
+phylolist <- read.csv("phylolist.csv", header=TRUE)
+glonaf <- read.csv("glonaf2.csv", header=TRUE)
+
+list1 <- as.character(phylolist$Species)  #Extracts a vector of species names from the data
+class(list1)
+
+list2 <- as.character(glonaf$Species)
+
+dif<-setdiff(list1,list2)
+
+list1[which((list1 %in% list2) == FALSE)]  #Species in list1 missing in list2
+list2[which((list2 %in% list1) == FALSE)]  #Species in list2 missing in list1
+
+glonaffilo <- list2[which((list2 %in% list1) == TRUE)]  #Species in list2 present in list1
+glonacut <- list2[which((list2 %in% list1) == FALSE)] #Species in list2 missing in list1
+
+write.csv(glonaffilo)
+
+write.csv(glonaffilo, 'Glonaffilo.csv', row.names=FALSE)
+
+Species_keep<-drop(Phyloplants, no_quiero$tip.label)
+
+listofglonaf <- read.csv("listofglonaf.csv", header=TRUE)
+frameglonaf <- as.data.frame(listofglonaf) 
+phylolist <- as.character(listofglonaf[,1])
+
+phylolist <- read.csv("phylolist.csv", header=TRUE)
+framefilo <- as.data.frame(phylolist) 
+
+main_data <- frameglonaf[ ! frameglonaf$Species %in% diff, ]
+
+dif<-setdiff(frameglonaf$Species,framefilo$Species)
+spdif <- as.data.frame(dif) 
+
+finale <- frameglonaf[ ! frameglonaf$Species %in% differ, ]
+differ <- as.character(spdif[,1])
+
+glonacut <- frameglonaf[which((frameglonaf$Species %in% framefilo$Species) == TRUE)] #Species in list2 missing in list1
+
+write.csv(finale, 'glonafilo.csv', row.names=FALSE)
+
+
