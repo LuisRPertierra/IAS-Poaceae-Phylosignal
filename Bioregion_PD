@@ -1,0 +1,192 @@
+
+setwd("C:/Users/u21844012/Desktop/Poaceae Trait Evolution/Bioregion")
+
+##RETRIEVE BIOGEOGRAPHIC ORIGIN OF SPECIES
+
+install.packages("spocc") 
+library("spocc")
+library("raster")
+
+splist<-read.csv("splist_natur.csv",header=TRUE)
+
+table.niche <- matrix(nrow=nrow(splist),ncol=2)
+colnames(table.niche) <- c('Biome', 'Realm')
+nrow(table.niche)
+nrow(splist)
+head(table.niche)
+
+Biome <-raster ("biome.tif")
+Realm <-raster ("realm1.tif")
+
+my_mode <- function(x) {                     # Create mode function 
+  unique_x <- unique(x)
+  tabulate_x <- tabulate(match(x, unique_x))
+  unique_x[tabulate_x == max(tabulate_x)]
+}
+
+plot(Biome)
+plot(Realm)
+i=1
+for (i in 1:length(unique(splist$Species))) {
+  tryCatch({
+    res <- occ(query = splist[i,"Species"], from = 'gbif', limit =10000)
+    locs<-occ2df(res)
+    locs[locs == 0] <- NA
+    locs2<-locs[complete.cases(locs),]
+    locs3<-round(locs2[,2:3], digits=2)
+    locs4<-locs3[!duplicated(locs3),]
+    B<-extract(Biome, locs4[,1:2])
+    R<-extract(Realm, locs4[,1:2])
+    Mode_Biome<-my_mode(B)
+    Mode_Realm<-my_mode(R)
+    table.niche[i,1] <- Mode_Biome
+    table.niche[i,2] <- Mode_Realm
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+sp_factory<-cbind(splist,table.niche)
+write.csv(sp_factory, "Spfactory.csv")
+
+sp_factory$RealmName = sp_factory$Realm
+sp_factory$BiomeName = sp_factory$Biome
+
+##RENAME CLASSES
+
+sp_factory["RealmName"][sp_factory["RealmName"] == 1] <- "Neotropical"
+sp_factory["RealmName"][sp_factory["RealmName"] == 2] <- "Palearctic"
+sp_factory["RealmName"][sp_factory["RealmName"] == 3] <- "Nearctic"
+sp_factory["RealmName"][sp_factory["RealmName"] == 4] <- "Not Available"
+sp_factory["RealmName"][sp_factory["RealmName"] == 5] <- "Indomalay"
+sp_factory["RealmName"][sp_factory["RealmName"] == 6] <- "Afrotropical"
+sp_factory["RealmName"][sp_factory["RealmName"] == 7] <- "Oceanian"
+sp_factory["RealmName"][sp_factory["RealmName"] == 8] <- "Australasian"
+sp_factory["RealmName"][sp_factory["RealmName"] == 9] <- "Antarctic"
+
+write.csv(sp_factory, "SpfactoryNames.csv")
+
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 1] <- "Tropical moist"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 2] <- "Tropical dry"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 3] <- "Tropical coniferous"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 4] <- "Temperate Broadleaf"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 5] <- "Temperate Coniferous"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 6] <- "Taiga"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 7] <- "Tropical savanna & Shrubland"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 8] <- "Temperate savanna & shrubland"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 9] <- "Flooded grassland"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 10] <- "Montane grassland"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 11] <- "Tundra"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 12] <- "Mediterranean"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 13] <- "Deserts"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 14] <- "Mangroves"
+sp_factory["BiomeName"][sp_factory["BiomeName"] == 128] <- "Not Available"
+
+write.csv(sp_factory, "SpfactoryAllNames.csv")
+
+##CALCULATE PHYLOGENETIC DIVERSITY VALUES
+
+setwd("C:/Users/u21844012/Desktop/Poaceae Trait Evolution/Bioregion")
+
+#  database for functional diversity
+#  #  loop for community assemblage
+
+# definir el arbol
+library("PhyloMeasures")
+library("phytools")
+library("picante")
+Phylopoas <- read.tree("phylo_poaceae.txt")
+arbol <- makeNodeLabel(Phylopoas)
+
+# empty matrix for reals
+com9 <- matrix(0, nrow = 9, 
+               ncol = length
+               (arbol$tip.label)) # 
+
+colnames(com9) <- arbol$tip.label
+com9[,1:10]
+
+Phylopoas<-read.csv("SpfactoryInvNat.csv", header=TRUE, sep=",")
+Phylopoas[,1:7] <- lapply(Phylopoas[,1:7], factor)
+
+# loop to convert species rows into columns
+for(i in 1:nrow(com9)){
+  pres <- Phylopoas[Phylopoas$Naturalizada == "a" & Phylopoas$Realm == i , ]
+  com9[i, colnames(com9) %in% pres$Species ] <- 1
+}
+
+# empty matrix for biomes
+com14 <- matrix(0, nrow = 14, 
+                ncol = length
+                (arbol$tip.label)) # 
+
+colnames(com14) <- arbol$tip.label
+com14[,1:10]
+
+Phylopoas<-read.csv("SpfactoryInvNat.csv", header=TRUE, sep=",")
+Phylopoas[,1:7] <- lapply(Phylopoas[,1:7], factor)
+
+for(i in 1:nrow(com14)){
+  pres <- Phylopoas[Phylopoas$Naturalizada == "a" & Phylopoas$Biome == i , ]
+  com14[i, colnames(com14) %in% pres$Species ] <- 1
+}
+
+# verify the number of presences == richness of species per community
+apply(com14,1,sum)
+
+# verify total species
+sum(apply(com14,1,sum))
+sum(apply(com9,1,sum))
+
+#calculate PD levels per community
+RealmalienPD <- pd.query(arbol,com9)
+
+RealmResults <- matrix(0, nrow = 9, ncol = 2) # 
+colnames(RealmResults) <- c("Realm", "PD")
+RealmResults[,1] <- c("Neotropical", "Palearctic", "Nearctic", "NA1", "Indomalay", "Afrotropical", "Oceanic", "Australasian", "Polar")
+RealmResults[,2] <- RealmalienPD 
+
+realmsespd <- ses.pd(com9, arbol, null.model="richness", runs=99)
+realmsespd[,9] <- c("Neotropical", "Palearctic", "Nearctic", "NA1", "Indomalay", "Afrotropical", "Oceanic", "Australasian", "Polar")
+
+write.csv(RealmResults, "realmalienpd.csv")
+write.csv(realmsespd, "RealmPD_NatuSES.csv")
+
+###Biome results
+BiomeResults <- matrix(0, nrow = 14, ncol = 2) # 
+colnames(BiomeResults) <- c("Biome", "PD")
+#BiomeResults[,1] <- c("Neotropical", "Palearctic", "Nearctic", "Indomalay", "Afrotropical", "Oceanic", "Australasian", "Polar")
+#BiomeResults[,2] <- BiomealienPD 
+
+biomesespd <- ses.pd(com14, arbol, null.model="richness", runs=99)
+biomesespd[,9] <- c("Tropical moist", "Tropical dry", "Tropical coniferous", "Temperate broadleaf", "Temperate coniferous", 
+                    "Taiga", "Tropical savannah", "Temperate savannah", "Flooded savannah", "Montane grassland", "Tundra", "Mediterranean", "Deserts", "Mangrove") 
+
+realmsespd <- ses.pd(com9, arbol, null.model="richness", runs=99)
+realmsespd <- realmsespd[-c(4),]
+r <- c("Neotropical", "Palearctic", "Nearctic", "Indomalay", "Afrotropical", "Oceanic", "Australasian", "Polar")
+
+write.csv(RealmResults, "biomealienpd.csv")
+write.csv(biomesespd, "BiomePDNatu_SES.csv")
+
+par(mar=c(4,4,2,2)+5)
+bp <- barplot(biomesespd$pd.obs.z, names.arg = x, las=2, cex.names = 1, horiz = TRUE, srt=45)
+text(bp, 0, round(biomesespd$pd.obs.p, 3), cex=1, pos=3, srt=45) 
+
+b2 <- barplot(biomesespd$pd.obs.z, names.arg = x, las=2)
+text(b2, -1, round(biomesespd$pd.obs.p, 3), cex=1, pos=3, las=2, srt=45) 
+
+#REALM
+par(mar=c(4,4,2,2)+5)
+bpr <- barplot(realmsespd$pd.obs.z, names.arg = r, las=2, cex.names = 1, horiz = TRUE, srt=45)
+text(bpr, 0, round(realmsespd$pd.obs.p, 3), cex=1, pos=4, srt=45) 
+
+b2r <- barplot(realmsespd$pd.obs.z, names.arg = r, las=2)
+text(b2r, -1, round(realmsespd$pd.obs.p, 3), cex=1, pos=3, srt=45) 
+
+
+#axis(1, at=seq(biomesespd$pd.obs.z), labels=biomeseTRUE#axis(1, at=seq(biomesespd$pd.obs.z), labels=biomesespd$V9)
+x <- c("Tropical moist", "Tropical dry", "Tropical coniferous", "Temperate broadleaf", "Temperate coniferous", 
+       "Taiga", "Tropical savannah", "Temperate savannah", "Flooded savannah", "Montane grassland", "Tundra", "Mediterranean", "Deserts", "Mangrove") 
+
+## --------------------------------------------------------------------
+
+
